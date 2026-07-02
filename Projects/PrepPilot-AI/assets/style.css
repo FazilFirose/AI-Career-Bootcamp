@@ -1,0 +1,42 @@
+/* Background */
+.stApp {
+    background: linear-gradient(135deg,#216ce4,#043295,#011123);
+}
+
+/* Main Title */
+h1{
+    color:#00E5FF !important;
+    text-align:center;
+    font-size:55px !important;
+    text-shadow:0px 0px 20px #131413;
+}
+
+/* Subtitle */
+h3{
+    color:white;
+    text-align:center;
+    text-shadow:0px 0px 20px #131413;
+}
+
+/* Buttons */
+.stButton>button{
+    background:#0b0b0b;
+    color:black;
+    border-radius:50px;
+    font-weight:bold;
+}
+
+/* Upload Box */
+
+[data-testid="stFileUploader"]{
+    border:2px solid #0f0f0f;
+    border-radius:20px;
+    padding:20px;
+    background:rgba(74, 74, 213, 0.03);
+}
+
+/* Sidebar */
+
+section[data-testid="stSidebar"]{
+    background:#0e1626;
+}
