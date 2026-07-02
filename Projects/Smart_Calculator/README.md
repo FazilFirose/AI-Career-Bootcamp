@@ -18,4 +18,4 @@ A menu-driven calculator built in Python as part of my AI Career Bootcamp.
 - Functions
 - History
 - GUI
-- Scientific calculator
+- Scientific calculatorh
