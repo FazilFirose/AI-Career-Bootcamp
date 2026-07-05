@@ -3,7 +3,10 @@ import os
 from PyPDF2 import PdfReader
 import math
 import re
-from datetime import datetime
+from datetime import datetime, date
+import io
+from utils.ai import summarize_text, search_subject_info, generate_study_map, detect_modules
+
 with open("assets/style.css") as f:
     st.markdown(
         f"<style>{f.read()}</style>",
@@ -20,109 +23,82 @@ st.subheader("Your AI-Powered Study Assistant")
 
 st.markdown("---")
 
-
 st.write("""
 Welcome to **PrepPilot AI**!
 
-Upload your study materials and let AI help you learn faster.
+Upload your study materials and let AI help you build a winning exam strategy.
 """)
 
-uploaded_file = st.file_uploader(
-    "📄 Upload a PDF",
-    type=["pdf"]
+st.markdown("### Step 1: Upload your study materials")
+uploaded_files = st.file_uploader(
+    "📄 Upload one or more PDFs (any modules you have notes for)",
+    type=["pdf"],
+    accept_multiple_files=True
 )
 
-if uploaded_file is not None:
-     upload_path = os.path.join("uploads", uploaded_file.name)
+st.markdown("### Step 2: Subject details")
+subject_code = st.text_input(
+    "📘 KTU Subject Code",
+    placeholder="Example: CST301"
+).strip().upper()
 
-     with open(upload_path, "wb") as file:
-        file.write(uploaded_file.getbuffer())
+exam_date = st.date_input("📅 Exam Date")
 
-     st.success(f"✅ Uploaded: {uploaded_file.name}")
-     st.info(f"📄 Current File: {uploaded_file.name}")
-     st.write("📁 File saved successfully!")
-     reader = PdfReader(upload_path)
-
-     text = ""
-
-     for page in reader.pages:
-       page_text = page.extract_text()
-
-       if page_text:
-          text += page_text + "\n"
-
-     word_count = len(text.split())
-     char_count = len(text)
-     page_count = len(reader.pages)
-
-     reading_time = math.ceil(word_count / 250)
-
-     upload_time = datetime.now().strftime("%d %b %Y | %I:%M %p")
-     st.markdown(
-      """
-       <h3 style="text-align:left;">📊 PDF Insights</h3>
-     """,
-     unsafe_allow_html=True
-     )
-
-     col1, col2 = st.columns(2)
-
-     with col1:
-      st.metric("📚 Pages", page_count)
-      st.metric("📝 Words", word_count)
-
-     with col2:
-      st.metric("🔤 Characters", char_count)
-      st.metric("⏱ Reading Time", f"{reading_time} min")
-
-     st.caption(f"📅 Uploaded: {upload_time}")
-     st.markdown("---")
-
-     st.markdown("### 🔍 Search Inside PDF")
-
-     search_query = st.text_input(
-      "Search for a keyword or phrase",
-       placeholder="Example: Machine Learning"
-     )
-     
-     st.markdown("---")
-     st.markdown("### 📖 PDF Content")
-
-     display_text = text
-
-     if search_query:
-       pattern = re.compile(re.escape(search_query), re.IGNORECASE)
-
-       display_text = pattern.sub(
-        lambda m: (
-         f'<span style="background:#00E5FF;'
-         f'color:black;'
-         f'padding:2px 4px;'
-         f'border-radius:4px;'
-         f'font-weight:bold;">{m.group()}</span>'
-         ),
-        text
-       )
-
-     st.markdown(
-       f"""
-      <div style="
-        height:600px;
-        overflow-y:auto;
-        background:#1a1a1a;
-        padding:20px;
-        border-radius:12px;
-        color:white;
-        white-space:pre-wrap;
-        border:1px solid #00E5FF;
-      ">
-     {display_text}
-      </div>
-      """,
-      unsafe_allow_html=True
-     )
+generate_clicked = st.button("🎯 Generate Study Map")
 
 
-     
+@st.cache_data
+def extract_pdf_text(file_bytes, file_name):
+    reader = PdfReader(io.BytesIO(file_bytes))
+    text = ""
+    for page in reader.pages:
+        page_text = page.extract_text()
+        if page_text:
+            text += page_text + "\n"
+    return text, len(reader.pages)
+
+
+if generate_clicked:
+    if not uploaded_files:
+        st.error("Please upload at least one PDF before generating a study map.")
+    elif not subject_code:
+        st.error("Please enter your KTU subject code.")
+    else:
+        combined_text = ""
+        file_snippets = {}
+
+        for uploaded_file in uploaded_files:
+            file_bytes = uploaded_file.getvalue()
+            text, page_count = extract_pdf_text(file_bytes, uploaded_file.name)
+            combined_text += f"\n\n--- Content from {uploaded_file.name} ---\n{text}"
+            file_snippets[uploaded_file.name] = text[:800]  # short snippet for module detection
+
+        with st.spinner(f"Step 1/3: Researching {subject_code} syllabus..."):
+            subject_info = search_subject_info(subject_code)
+
+        with st.spinner("Step 2/3: Matching your files to modules..."):
+            module_mapping = detect_modules(file_snippets, subject_info)
+
+        st.markdown("### 📊 Your Files, Mapped to Modules")
+        st.markdown(module_mapping)
+
+        days_left = (exam_date - date.today()).days
+        if days_left < 0:
+            st.warning("The exam date you entered is in the past. Please check the date.")
+        else:
+            st.info(f"⏳ {days_left} day(s) left until your exam.")
+        with st.spinner("Step 3/3: Building your personalized study map..."):
+            study_map = generate_study_map(
+                combined_text=combined_text,
+                subject_code=subject_code,
+                subject_info=subject_info,
+                days_left=days_left
+            )
+
+        st.markdown("---")
+        st.markdown("## 🗺️ Your Study Map")
+        st.markdown(study_map)
+
+
 st.sidebar.title("PrepPilot AI")
-st.sidebar.success("Version 1.2")
+st.sidebar.success("Version 2.0")
