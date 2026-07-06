@@ -21,8 +21,8 @@ h3{
 
 /* Buttons */
 .stButton>button{
-    background:#0b0b0b;
-    color:black;
+    background:#1702f9;
+    color:rgb(248, 247, 247);
     border-radius:50px;
     font-weight:bold;
 }
@@ -48,4 +48,20 @@ section[data-testid="stSidebar"]{
     padding: 30px;
     margin-top: 20px;
     box-shadow: 0 0 20px rgba(0, 229, 255, 0.15);
+}
+.st-key-study_map_box {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    border-radius: 16px;
+}
+
+.st-key-study_map_box p,
+.st-key-study_map_box li,
+.st-key-study_map_box span,
+.st-key-study_map_box h1,
+.st-key-study_map_box h2,
+.st-key-study_map_box h3,
+.st-key-study_map_box h4,
+.st-key-study_map_box strong {
+    color: #000000 !important;
 }

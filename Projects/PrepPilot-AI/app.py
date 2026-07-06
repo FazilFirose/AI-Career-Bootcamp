@@ -96,25 +96,48 @@ if generate_clicked:
         days_left = (exam_date - date.today()).days
         if days_left < 0:
             st.warning("The exam date you entered is in the past. Please check the date.")
+            st.stop()
 
-        with st.spinner(f"Step 1/3: Researching {subject_code} syllabus..."):
-            subject_info = search_subject_info(subject_code)
+        try:
+            with st.spinner(f"Step 1/3: Researching {subject_code} syllabus..."):
+                subject_info = search_subject_info(subject_code)
 
-        with st.spinner("Step 2/3: Matching your files to modules..."):
-            module_mapping = detect_modules(file_snippets, subject_info)
+            with st.spinner("Step 2/3: Matching your files to modules..."):
+                module_mapping = detect_modules(file_snippets, subject_info)
 
-        st.markdown("### 📊 Your Files, Mapped to Modules")
-        st.markdown(module_mapping)
+            st.markdown("### 📊 Your Files, Mapped to Modules")
+            st.markdown(module_mapping)
+        except Exception as e:
+            error_message = str(e)
+            if "RESOURCE_EXHAUSTED" in error_message or "429" in error_message:
+                st.error("⚠️ Daily AI request limit reached (free tier allows 20/day). Please try again tomorrow, or consider upgrading your Gemini plan.")
+            elif "UNAVAILABLE" in error_message or "503" in error_message:
+                st.error("⚠️ Gemini's servers are temporarily busy. Please wait a moment and try again.")
+            else:
+                print(f"--- UNEXPECTED ERROR ---\n{type(e).__name__}: {e}")
+                st.error(f"⚠️ Something went wrong: {type(e).__name__}. Check your terminal for details.")
+            st.stop()
 
-        with st.spinner("Step 3/3: Building your personalized study map..."):
-            study_data = generate_study_map(
-                combined_text=combined_text,
-                subject_code=subject_code,
-                subject_info=subject_info,
-                days_left=days_left
-            )
+        try:
+            with st.spinner("Step 3/3: Building your personalized study map..."):
+                study_data = generate_study_map(
+                    combined_text=combined_text,
+                    subject_code=subject_code,
+                    subject_info=subject_info,
+                    days_left=days_left
+                )
+        except Exception as e:
+            error_message = str(e)
+            if "RESOURCE_EXHAUSTED" in error_message or "429" in error_message:
+                st.error("⚠️ Daily AI request limit reached (free tier allows 20/day). Please try again tomorrow, or consider upgrading your Gemini plan.")
+            elif "UNAVAILABLE" in error_message or "503" in error_message:
+                st.error("⚠️ Gemini's servers are temporarily busy. Please wait a moment and try again.")
+            else:
+                print(f"--- UNEXPECTED ERROR ---\n{type(e).__name__}: {e}")
+                st.error(f"⚠️ Something went wrong: {type(e).__name__}. Check your terminal for details.")
+            st.stop()
 
-        with st.container(border=True):
+        with st.container(border=True, key="study_map_box"):
 
          st.markdown("---")
          st.info(f"⏳ {days_left} day(s) left until your exam.")
