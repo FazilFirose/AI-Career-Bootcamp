@@ -71,7 +71,11 @@ if generate_clicked:
             file_bytes = uploaded_file.getvalue()
             text, page_count = extract_pdf_text(file_bytes, uploaded_file.name)
             combined_text += f"\n\n--- Content from {uploaded_file.name} ---\n{text}"
-            file_snippets[uploaded_file.name] = text[:800]  # short snippet for module detection
+            file_snippets[uploaded_file.name] = text[:800]
+
+        days_left = (exam_date - date.today()).days
+        if days_left < 0:
+            st.warning("The exam date you entered is in the past. Please check the date.")
 
         with st.spinner(f"Step 1/3: Researching {subject_code} syllabus..."):
             subject_info = search_subject_info(subject_code)
@@ -82,13 +86,8 @@ if generate_clicked:
         st.markdown("### 📊 Your Files, Mapped to Modules")
         st.markdown(module_mapping)
 
-        days_left = (exam_date - date.today()).days
-        if days_left < 0:
-            st.warning("The exam date you entered is in the past. Please check the date.")
-        else:
-            st.info(f"⏳ {days_left} day(s) left until your exam.")
         with st.spinner("Step 3/3: Building your personalized study map..."):
-            study_map = generate_study_map(
+            study_data = generate_study_map(
                 combined_text=combined_text,
                 subject_code=subject_code,
                 subject_info=subject_info,
@@ -96,8 +95,58 @@ if generate_clicked:
             )
 
         st.markdown("---")
+        st.info(f"⏳ {days_left} day(s) left until your exam.")
         st.markdown("## 🗺️ Your Study Map")
-        st.markdown(study_map)
+
+        # --- Pie chart: study order / difficulty breakdown ---
+        modules = study_data["modules"]
+        names = [m["name"] for m in modules]
+        scores = [m["difficulty_score"] for m in modules]
+
+        col_chart, col_order = st.columns([1, 1])
+
+        with col_chart:
+            st.markdown("#### Difficulty Breakdown")
+            st.plotly_chart(
+                {
+                    "data": [{
+                        "labels": names,
+                        "values": scores,
+                        "type": "pie",
+                        "hole": 0.4
+                    }],
+                    "layout": {"showlegend": True}
+                },
+                use_container_width=True
+            )
+
+        with col_order:
+            st.markdown("#### Recommended Study Order")
+            sorted_modules = sorted(modules, key=lambda m: m["study_order"])
+            for i, m in enumerate(sorted_modules, 1):
+                st.markdown(f"**{i}.** {m['name']} (Difficulty: {m['difficulty_score']}/10)")
+
+        st.markdown("---")
+
+        # --- Tabs: one per module ---
+        tab_labels = [m["name"] for m in modules]
+        tabs = st.tabs(tab_labels)
+
+        for tab, module in zip(tabs, modules):
+            with tab:
+                st.markdown("**Key Points:**")
+                for point in module["key_points"]:
+                    st.markdown(f"- {point}")
+
+                st.markdown("**Likely Questions:**")
+                for q in module["likely_questions"]:
+                    with st.container():
+                        st.markdown(f"**Q: {q['question']}** _({q['marks']} marks)_")
+                        st.markdown(q["model_answer"])
+                        if q.get("needs_diagram"):
+                            search_url = f"https://www.google.com/search?q={q['diagram_search_term'].replace(' ', '+')}&tbm=isch"
+                            st.markdown(f"[🖼️ View diagram reference for this answer]({search_url})")
+                        st.markdown("---")
 
 
 st.sidebar.title("PrepPilot AI")

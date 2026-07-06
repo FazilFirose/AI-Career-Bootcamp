@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 from utils.cache import get_cached_result, save_to_cache
+import json
 
 load_dotenv()  # reads the .env file
 
@@ -39,34 +40,34 @@ def search_subject_info(subject_code):
         return cached  # already searched before, reuse it
 
     prompt = f"""
-    IMPORTANT CONTEXT: KTU (APJ Abdul Kalam Technological University)
-    introduced a NEW curriculum scheme in 2024. Under this new scheme:
-    - Total exam marks per subject changed from 100 (old 2019 scheme)
-      to 60 (new 2024 scheme)
-    - Each subject now typically has 4 modules instead of 5
-    - The Part A / Part B mark distribution is DIFFERENT from the old
-      2019 scheme
+    CONFIRMED FACTS about KTU (APJ Abdul Kalam Technological University)
+    2024 Scheme — treat these as ground truth, do not contradict them:
+    - Total university exam marks per subject: 60 (NOT 100 — that was
+      the old 2019 scheme)
+    - Number of modules per subject: 4 (NOT 5 — that was the old 2019
+      scheme)
+    - Exam pattern: Part A = 24 marks, Part B = 36 marks
+      (the old 2019 scheme was Part A = 30 marks, Part B = 70 marks —
+      do NOT use these old numbers)
+    - The official syllabus and model question papers are published
+      by KTU directly at ktu.edu.in, under the Academic section
+      (view-questionpapers) and per-semester pages like
+      ktu.edu.in/academics/btech/question-papers/semester-X
 
     Search for information about the KTU subject with code {subject_code}.
-    Find:
+    Prioritize ktu.edu.in as the source wherever possible. Find:
     1. The official 2024-scheme syllabus/module breakdown for this
-       subject (should be 4 modules, NOT 5)
-    2. Any available 2024-scheme previous year question papers
-       specifically (do NOT use 2019-scheme papers for marking pattern,
-       only for topic-pattern comparison)
+       subject (must be exactly 4 modules)
+    2. Any available 2024-scheme previous year or model question papers
+       specifically (2019-scheme papers may only be used for comparing
+       topic patterns, never for marks/pattern)
     3. Commonly repeated or emphasized topics across available papers
-    4. The EXACT 2024-scheme exam marking/evaluation pattern for this
-       subject — total marks should be 60, confirm the Part A vs
-       Part B mark distribution specifically for 2024, not 2019
+    4. Confirm the marking pattern matches: 60 total marks, 24 (Part A)
+       + 36 (Part B). If a source states different numbers, disregard
+       that source as outdated/incorrect.
 
-    If you find conflicting information between 2019 and 2024 scheme
-    sources, explicitly state which scheme each detail comes from, and
-    prioritize 2024-scheme information for anything related to marks
-    or exam pattern.
-
-    Summarize your findings clearly, organized by module, and clearly
-    label which scheme (2019 or 2024) each piece of information is
-    based on.
+    Summarize your findings clearly, organized by module. Do not
+    present any 2019-scheme numbers as if they apply to 2024.
     """
 
     response = client.models.generate_content(
@@ -83,57 +84,72 @@ def search_subject_info(subject_code):
 def generate_study_map(combined_text, subject_code, subject_info, days_left):
     """
     Combines uploaded PDF content + web-researched subject info to produce
-    a prioritized, exam-date-aware study map with per-module likely
-    questions, expected marks, and answer-length guidance.
+    a prioritized, exam-date-aware study map. Returns a dict with:
+    - 'modules': list of {name, difficulty_score, summary} for charting
+    - 'details': dict of {module_name: full detailed text with questions}
     """
     prompt = f"""
-    You are an expert exam strategist helping a KTU (APJ Abdul Kalam
-    Technological University) student prepare for subject {subject_code}.
+    You are an expert exam strategist helping a KTU student prepare for
+    subject {subject_code}. The student has {days_left} days left.
 
-    The student has {days_left} days left before their exam.
-
-    Here is the student's own uploaded study material (may only cover
-    SOME of the subject's modules):
+    Student's uploaded material:
     ---
     {combined_text}
     ---
 
-    Here is researched information about this subject's syllabus,
-    module breakdown, past papers (2019 and 2024 scheme), and the
-    2024 scheme's marking/evaluation pattern:
+    Researched subject info (syllabus, past papers, marking scheme):
     ---
     {subject_info}
     ---
 
-    Your task:
-    1. Identify all modules for this subject (usually 4-5 in the 2024
-       scheme). For any module NOT covered in the student's uploaded
-       material, use the researched information to fill that gap.
-    2. Rank ALL modules in priority order (most important/most-likely
-       tested first), considering the {days_left} days available —
-       if time is short, prioritize more aggressively.
-    3.  For EACH module, provide:
-       - Condensed key points only (no filler)
-       - The most likely exam questions for that module
-       - The likely mark value of each question (based on the 2024
-         scheme's marking pattern, e.g., Part A short answers vs
-         Part B long answers)
-       - For each likely question, WRITE OUT the actual model answer
-         content the student should study and reproduce — not just
-         instructions on how much to write. Give the real points,
-         explanations, or steps needed to answer that specific
-         question well and score full marks for its mark value.
+    Respond with ONLY a valid JSON object (no markdown, no extra text),
+    in exactly this structure:
 
-    Format the output as a clear, structured study map organized by
-    priority, easy to scan quickly under time pressure.
+    {{
+      "modules": [
+        {{
+          "name": "Module 1: <topic name>",
+          "difficulty_score": <integer 1-10, where 1 = easiest/fastest
+                               to master, 10 = hardest/most time-consuming>,
+          "study_order": <integer, 1 = study first>,
+          "key_points": ["point 1", "point 2", "..."],
+          "likely_questions": [
+            {{
+              "question": "the likely exam question text",
+              "marks": <integer mark value based on 2024 scheme Part A/B>,
+              "model_answer": "the actual content/points the student
+                               should write to answer this well",
+              "needs_diagram": true or false,
+              "diagram_search_term": "short search term if needs_diagram
+                                       is true, else empty string"
+            }}
+          ]
+        }}
+      ]
+    }}
+
+    Include all 4 modules (fill gaps from research if the student's
+    uploaded material doesn't cover a module). Order modules by
+    study_order based on ease-of-mastery (easiest first), not just
+    importance, considering the {days_left} days available.
     """
 
     response = client.models.generate_content(
         model="gemini-2.5-flash",
-        contents=prompt
+        contents=prompt,
+        config=types.GenerateContentConfig(
+            response_mime_type="application/json"
+        )
     )
 
-    return response.text
+    try:
+        data = json.loads(response.text)
+    except json.JSONDecodeError as e:
+        print("RAW GEMINI OUTPUT (for debugging):")
+        print(response.text)
+        raise e
+
+    return data
 def detect_modules(file_snippets, subject_info):
     """
     Given short text snippets from each uploaded file, and the subject's
