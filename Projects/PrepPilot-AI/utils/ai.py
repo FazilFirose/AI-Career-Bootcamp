@@ -132,6 +132,13 @@ def generate_study_map(combined_text, subject_code, subject_info, days_left):
     uploaded material doesn't cover a module). Order modules by
     study_order based on ease-of-mastery (easiest first), not just
     importance, considering the {days_left} days available.
+    
+    When a model_answer includes code (Java, SQL, HTML, Python, etc.),
+    wrap that code in triple backticks with the language name, like:
+```java
+    code here
+```
+    Do not put explanation text inside the code fences.
     """
 
     response = client.models.generate_content(

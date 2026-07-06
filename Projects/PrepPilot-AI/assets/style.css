@@ -41,3 +41,11 @@ h3{
 section[data-testid="stSidebar"]{
     background:#0e1626;
 }
+.study-map-box {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid #00E5FF;
+    border-radius: 16px;
+    padding: 30px;
+    margin-top: 20px;
+    box-shadow: 0 0 20px rgba(0, 229, 255, 0.15);
+}
