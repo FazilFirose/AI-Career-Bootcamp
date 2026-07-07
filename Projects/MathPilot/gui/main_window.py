@@ -1,7 +1,10 @@
+import threading
+
 import customtkinter as ctk
 
 from gui.theme import APP_TITLE, COLORS, apply_theme
 from gui.widget import build_action_button, build_section
+from voice import listen
 
 
 class MathPilotApp(ctk.CTk):
@@ -94,14 +97,46 @@ class MathPilotApp(ctk.CTk):
         )
         upload_button.grid(row=0, column=1, sticky="e", padx=(8, 10), pady=12)
 
+        voice_button = build_action_button(
+            footer,
+            "\U0001F3A4 Voice",
+            self._on_voice,
+            secondary=True,
+        )
+        voice_button.grid(row=0, column=2, sticky="e", padx=(0, 10), pady=12)
+
         solve_button = build_action_button(footer, "Solve", self._on_solve)
-        solve_button.grid(row=0, column=2, sticky="e", padx=(0, 12), pady=12)
+        solve_button.grid(row=0, column=3, sticky="e", padx=(0, 12), pady=12)
 
     def _on_solve(self) -> None:
         self.status_label.configure(text="Solving will be added in a future phase.")
 
     def _on_upload_image(self) -> None:
         self.status_label.configure(text="Image upload will be added in a future phase.")
+
+    def _on_voice(self) -> None:
+        self.status_label.configure(text="Listening...")
+        self.update_idletasks()
+
+        thread = threading.Thread(target=self._listen_for_voice, daemon=True)
+        thread.start()
+
+    def _listen_for_voice(self) -> None:
+        try:
+            recognized_text = listen()
+        except RuntimeError as exc:
+            self.after(0, self._show_voice_error, str(exc))
+            return
+
+        self.after(0, self._apply_voice_text, recognized_text)
+
+    def _apply_voice_text(self, recognized_text: str) -> None:
+        self.question_textbox.delete("1.0", "end")
+        self.question_textbox.insert("1.0", recognized_text)
+        self.status_label.configure(text="Ready")
+
+    def _show_voice_error(self, message: str) -> None:
+        self.status_label.configure(text=f"Voice error: {message}")
 
 
 def run_app() -> None:
