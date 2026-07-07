@@ -1,0 +1,23 @@
+# Virtual Environment
+venv/
+
+# Environment Variables
+.env
+
+# Python Cache
+__pycache__/
+*.pyc
+
+# VS Code
+.vscode/
+
+# History
+history/
+
+# Database
+*.db
+
+# Build Files
+build/
+dist/
+*.spec
