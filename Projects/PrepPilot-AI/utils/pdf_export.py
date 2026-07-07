@@ -62,4 +62,4 @@ def generate_pdf(study_data, subject_code, days_left):
 
         pdf.ln(5)
 
-    return pdf.output(dest="S").encode("latin-1")
+    return bytes(pdf.output())

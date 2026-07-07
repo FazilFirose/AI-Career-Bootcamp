@@ -106,11 +106,22 @@ def generate_study_map(combined_text, subject_code, subject_info, days_left):
     in exactly this structure:
 
     {{
+      "study_schedule": [
+        {{
+          "days": "e.g. Day 1-2",
+          "focus": "Module name being studied in this period",
+          "reason": "Brief reason why this module is scheduled here"
+        }}
+      ],
       "modules": [
         {{
           "name": "Module 1: <topic name>",
           "difficulty_score": <integer 1-10, where 1 = easiest/fastest
                                to master, 10 = hardest/most time-consuming>,
+          "difficulty_reason": "Explain WHY this module is easy/hard —
+                                 e.g., 'Heavy on code implementation,
+                                 requires hands-on practice' or 'Mostly
+                                 theory/definitions, quick to memorize'",
           "study_order": <integer, 1 = study first>,
           "key_points": ["point 1", "point 2", "..."],
           "likely_questions": [
@@ -128,10 +139,19 @@ def generate_study_map(combined_text, subject_code, subject_info, days_left):
       ]
     }}
 
+    For the study_schedule: divide the {days_left} available days across
+    all 4 modules based on their study_order (easiest/highest-priority
+    first) and difficulty_score (harder modules get more days). Reserve
+    the final ~15-20% of the remaining days purely for revision of all
+    modules — label this final entry with "focus": "Full Revision".
+    If days_left is very small (e.g., 1-2 days), compress aggressively
+    and skip or shorten the dedicated revision block accordingly.
+
     Include all 4 modules (fill gaps from research if the student's
     uploaded material doesn't cover a module). Order modules by
     study_order based on ease-of-mastery (easiest first), not just
     importance, considering the {days_left} days available.
+
     When a model_answer includes code (Java, SQL, HTML, Python, etc.),
     wrap that code in triple backticks with the language name, like:
 ```java

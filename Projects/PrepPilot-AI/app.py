@@ -142,6 +142,12 @@ if generate_clicked:
          st.markdown("---")
          st.info(f"⏳ {days_left} day(s) left until your exam.")
          st.markdown("## 🗺️ Your Study Map")
+         # --- Day-by-day study schedule ---
+         if "study_schedule" in study_data:
+             st.markdown("### 📅 Your Day-by-Day Plan")
+             for entry in study_data["study_schedule"]:
+                st.markdown(f"**{entry['days']}:** {entry['focus']}  \n_{entry['reason']}_")
+             st.markdown("---")
 
          # --- Pie chart: study order / difficulty breakdown ---
          modules = study_data["modules"]
@@ -166,10 +172,12 @@ if generate_clicked:
             )
 
          with col_order:
-            st.markdown("#### Recommended Study Order")
-            sorted_modules = sorted(modules, key=lambda m: m["study_order"])
-            for i, m in enumerate(sorted_modules, 1):
-                st.markdown(f"**{i}.** {m['name']} (Difficulty: {m['difficulty_score']}/10)")
+                st.markdown("#### Recommended Study Order")
+                sorted_modules = sorted(modules, key=lambda m: m["study_order"])
+                for i, m in enumerate(sorted_modules, 1):
+                    st.markdown(f"**{i}.** {m['name']} (Difficulty: {m['difficulty_score']}/10)")
+                    if "difficulty_reason" in m:
+                        st.caption(m["difficulty_reason"])
 
          st.markdown("---")
 

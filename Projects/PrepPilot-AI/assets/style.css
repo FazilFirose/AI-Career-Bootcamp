@@ -1,6 +1,24 @@
-/* Background */
+/* Background - animated gradient */
 .stApp {
-    background: linear-gradient(135deg,#216ce4,#043295,#011123);
+    background: linear-gradient(-45deg, #216ce4, #043295, #00E5FF, #011123);
+    background-size: 400% 400%;
+    animation: gradientShift 15s ease infinite;
+}
+
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* Page fade-in on load */
+[data-testid="stAppViewContainer"] {
+    animation: fadeIn 0.8s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 /* Main Title */
@@ -8,7 +26,12 @@ h1{
     color:#00E5FF !important;
     text-align:center;
     font-size:55px !important;
-    text-shadow:0px 0px 20px #131413;
+    animation: titleGlow 4s ease-in-out infinite;
+}
+
+@keyframes titleGlow {
+    0%, 100% { text-shadow: 0px 0px 20px #131413; }
+    50% { text-shadow: 0px 0px 35px #00E5FF; }
 }
 
 /* Subtitle */
@@ -18,37 +41,43 @@ h3{
     text-shadow:0px 0px 20px #131413;
 }
 
-
 /* Buttons */
 .stButton>button{
     background:#1702f9;
     color:rgb(248, 247, 247);
     border-radius:50px;
     font-weight:bold;
+    transition: all 0.3s ease;
+    border: none;
 }
 
-/* Upload Box */
+.stButton>button:hover {
+    background: #00E5FF;
+    color: #000000;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0, 229, 255, 0.4);
+}
 
+/* Upload Box - subtle glow pulse */
 [data-testid="stFileUploader"]{
-    border:2px solid #0f0f0f;
+    border:2px solid #00E5FF;
     border-radius:20px;
     padding:20px;
     background:rgba(74, 74, 213, 0.03);
+    animation: pulseGlow 3s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+    0%, 100% { box-shadow: 0 0 5px rgba(0, 229, 255, 0.2); }
+    50% { box-shadow: 0 0 20px rgba(0, 229, 255, 0.5); }
 }
 
 /* Sidebar */
-
 section[data-testid="stSidebar"]{
     background:#0e1626;
 }
-.study-map-box {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid #00E5FF;
-    border-radius: 16px;
-    padding: 30px;
-    margin-top: 20px;
-    box-shadow: 0 0 20px rgba(0, 229, 255, 0.15);
-}
+
+/* Study map result box - white background, black text */
 .st-key-study_map_box {
     background-color: #ffffff !important;
     color: #000000 !important;
@@ -64,4 +93,21 @@ section[data-testid="stSidebar"]{
 .st-key-study_map_box h4,
 .st-key-study_map_box strong {
     color: #000000 !important;
+}
+
+/* Multi-line code blocks inside the study map box */
+.st-key-study_map_box pre code,
+.st-key-study_map_box pre {
+    background-color: #1a1a1a !important;
+    color: #feffff !important;
+}
+
+/* Inline code snippets inside the study map box */
+.st-key-study_map_box p code,
+.st-key-study_map_box li code,
+.st-key-study_map_box span code {
+    background-color: #2b2b2b !important;
+    color: #00E5FF !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
 }
