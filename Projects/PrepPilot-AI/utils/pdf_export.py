@@ -32,7 +32,7 @@ def generate_pdf(study_data, subject_code, days_left):
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
     pdf.set_font("Helvetica", "B", 16)
-    safe_multicell(pdf, f"PrepPilot AI - Study Map for {subject_code}", "title")
+    safe_multicell(pdf, f"PrepPilot AI - Quick Revision: {subject_code}", "title")
     pdf.set_font("Helvetica", "", 11)
     safe_multicell(pdf, f"{days_left} day(s) left until exam", "days_left")
     pdf.ln(5)
@@ -40,24 +40,14 @@ def generate_pdf(study_data, subject_code, days_left):
     for module in study_data["modules"]:
         pdf.set_font("Helvetica", "B", 13)
         safe_multicell(pdf, module["name"], "module_name")
-
-        pdf.set_font("Helvetica", "", 10)
-        safe_multicell(pdf, f"Difficulty: {module['difficulty_score']}/10", "difficulty_score")
         pdf.ln(2)
 
-        pdf.set_font("Helvetica", "B", 11)
-        safe_multicell(pdf, "Key Points:", "key_points_label")
         pdf.set_font("Helvetica", "", 10)
-        for point in module["key_points"]:
-            safe_multicell(pdf, f"- {point}", "key_point")
-
-        pdf.ln(2)
-        pdf.set_font("Helvetica", "B", 11)
-        safe_multicell(pdf, "Likely Questions:", "questions_label")
-        pdf.set_font("Helvetica", "", 10)
-        for q in module["likely_questions"]:
-            safe_multicell(pdf, f"Q: {q['question']} ({q['marks']} marks)", "question")
-            safe_multicell(pdf, q["model_answer"], "model_answer")
+        for point_data in module["key_points"]:
+            pdf.set_font("Helvetica", "B", 10)
+            safe_multicell(pdf, f"- {point_data['point']}", "key_point_title")
+            pdf.set_font("Helvetica", "", 9)
+            safe_multicell(pdf, point_data["content"], "key_point_content")
             pdf.ln(1)
 
         pdf.ln(5)

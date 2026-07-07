@@ -47,6 +47,8 @@ subject_code = st.text_input(
 exam_date = st.date_input("📅 Exam Date")
 
 generate_clicked = st.button("🎯 Generate Study Map")
+
+
 @st.cache_data
 def extract_pdf_text(file_bytes, file_name):
     reader = PdfReader(io.BytesIO(file_bytes))
@@ -56,6 +58,7 @@ def extract_pdf_text(file_bytes, file_name):
         if page_text:
             text += page_text + "\n"
     return text, len(reader.pages)
+
 
 @st.cache_data
 def extract_pptx_text(file_bytes, file_name):
@@ -102,6 +105,10 @@ if generate_clicked:
             with st.spinner(f"Step 1/3: Researching {subject_code} syllabus..."):
                 subject_info = search_subject_info(subject_code)
 
+            if "SUBJECT_NOT_FOUND" in subject_info:
+                st.error(f"⚠️ '{subject_code}' doesn't appear to be a valid KTU subject code. Please check and try again.")
+                st.stop()
+
             with st.spinner("Step 2/3: Matching your files to modules..."):
                 module_mapping = detect_modules(file_snippets, subject_info)
 
@@ -137,26 +144,35 @@ if generate_clicked:
                 st.error(f"⚠️ Something went wrong: {type(e).__name__}. Check your terminal for details.")
             st.stop()
 
-        with st.container(border=True, key="study_map_box"):
+        st.session_state["study_data"] = study_data
+        st.session_state["days_left"] = days_left
+        st.session_state["subject_code"] = subject_code
 
-         st.markdown("---")
-         st.info(f"⏳ {days_left} day(s) left until your exam.")
-         st.markdown("## 🗺️ Your Study Map")
-         # --- Day-by-day study schedule ---
-         if "study_schedule" in study_data:
-             st.markdown("### 📅 Your Day-by-Day Plan")
-             for entry in study_data["study_schedule"]:
+
+if "study_data" in st.session_state:
+    study_data = st.session_state["study_data"]
+    days_left = st.session_state["days_left"]
+    subject_code = st.session_state["subject_code"]
+    modules = study_data["modules"]
+
+    with st.container(border=True, key="study_map_box"):
+
+        st.markdown("---")
+        st.info(f"⏳ {days_left} day(s) left until your exam.")
+        st.markdown("## 🗺️ Your Study Map")
+
+        if "study_schedule" in study_data:
+            st.markdown("### 📅 Your Day-by-Day Plan")
+            for entry in study_data["study_schedule"]:
                 st.markdown(f"**{entry['days']}:** {entry['focus']}  \n_{entry['reason']}_")
-             st.markdown("---")
+            st.markdown("---")
 
-         # --- Pie chart: study order / difficulty breakdown ---
-         modules = study_data["modules"]
-         names = [m["name"] for m in modules]
-         scores = [m["difficulty_score"] for m in modules]
+        names = [m["name"] for m in modules]
+        scores = [m["difficulty_score"] for m in modules]
 
-         col_chart, col_order = st.columns([1, 1])
+        col_chart, col_order = st.columns([1, 1])
 
-         with col_chart:
+        with col_chart:
             st.markdown("#### Difficulty Breakdown")
             st.plotly_chart(
                 {
@@ -166,61 +182,135 @@ if generate_clicked:
                         "type": "pie",
                         "hole": 0.4
                     }],
-                    "layout": {"showlegend": True}
+                    "layout": {
+                        "showlegend": True,
+                        "paper_bgcolor": "rgba(0,0,0,0)",
+                        "plot_bgcolor": "rgba(0,0,0,0)",
+                        "font": {"color": "#ffffff"}
+                    }
                 },
                 use_container_width=True
             )
 
-         with col_order:
-                st.markdown("#### Recommended Study Order")
-                sorted_modules = sorted(modules, key=lambda m: m["study_order"])
-                for i, m in enumerate(sorted_modules, 1):
-                    st.markdown(f"**{i}.** {m['name']} (Difficulty: {m['difficulty_score']}/10)")
-                    if "difficulty_reason" in m:
-                        st.caption(m["difficulty_reason"])
+        with col_order:
+            st.markdown("#### Recommended Study Order")
+            sorted_modules = sorted(modules, key=lambda m: m["study_order"])
+            for i, m in enumerate(sorted_modules, 1):
+                st.markdown(f"**{i}.** {m['name']} (Difficulty: {m['difficulty_score']}/10)")
+                if "difficulty_reason" in m:
+                    st.caption(m["difficulty_reason"])
 
-         st.markdown("---")
+        st.markdown("---")
+        st.markdown("#### 📚 Module Details")
 
-         # --- Tabs: one per module ---
-         tab_labels = [m["name"] for m in modules]
-         tabs = st.tabs(tab_labels)
+        for idx, module in enumerate(modules):
+            module_key = f"module_{idx}"
 
-         for tab, module in zip(tabs, modules):
-            with tab:
-                st.markdown("**Key Points:**")
-                for point in module["key_points"]:
-                    st.markdown(f"- {point}")
+            if f"{module_key}_open" not in st.session_state:
+                st.session_state[f"{module_key}_open"] = False
 
-                st.markdown("**Likely Questions:**")
-                for q in module["likely_questions"]:
-                    with st.container():
-                        st.markdown(f"**Q: {q['question']}** _({q['marks']} marks)_")
+            if "completed_points" not in st.session_state:
+                st.session_state["completed_points"] = {}
 
-                        # Split model_answer into text and code parts
-                        answer_parts = q["model_answer"].split("```")
-                        for i, part in enumerate(answer_parts):
-                            if i % 2 == 1:
-                                # Odd-indexed parts are inside ``` fences = code
-                                lines = part.strip().split("\n")
-                                lang = lines[0] if lines[0].isalpha() else ""
-                                code_content = "\n".join(lines[1:]) if lang else part.strip()
-                                st.code(code_content, language=lang if lang else None)
-                            else:
-                                if part.strip():
-                                    st.markdown(part.strip())
+            total_points = len(module["key_points"])
+            checked_count = sum(
+                1 for p_idx in range(total_points)
+                if st.session_state["completed_points"].get(f"{module_key}_point_{p_idx}", False)
+            )
+            completion_pct = int((checked_count / total_points) * 100) if total_points > 0 else 0
 
-                        if q.get("needs_diagram"):
-                            search_url = f"https://www.google.com/search?q={q['diagram_search_term'].replace(' ', '+')}&tbm=isch"
-                            st.markdown(f"[🖼️ View diagram reference for this answer]({search_url})")
-                        st.markdown("---")
+            with st.container(key=f"{module_key}_row"):
+                col_card, col_ring = st.columns([5, 1])
+
+                with col_card:
+                    icon = "▼" if st.session_state[f"{module_key}_open"] else "▶"
+                    if st.button(f"{icon} {module['name']}", key=f"{module_key}_toggle", use_container_width=True):
+                        st.session_state[f"{module_key}_open"] = not st.session_state[f"{module_key}_open"]
+                        st.rerun()
+
+                with col_ring:
+                    st.plotly_chart(
+                        {
+                            "data": [{
+                                "values": [completion_pct, 100 - completion_pct],
+                                "labels": ["Done", "Remaining"],
+                                "type": "pie",
+                                "hole": 0.65,
+                                "marker": {"colors": ["#00E5FF", "#3a3a3a"]},
+                                "textinfo": "none",
+                                "showlegend": False,
+                                "sort": False,
+                                "direction": "clockwise"
+                            }],
+                            "layout": {
+                                "margin": {"l": 10, "r": 10, "t": 10, "b": 10},
+                                "height": 90,
+                                "paper_bgcolor": "rgba(0,0,0,0)",
+                                "plot_bgcolor": "rgba(0,0,0,0)",
+                                "annotations": [{
+                                    "text": f"{completion_pct}%",
+                                    "showarrow": False,
+                                    "font": {"size": 13, "color": "#ffffff"}
+                                }]
+                            }
+                        },
+                        use_container_width=True,
+                        key=f"{module_key}_ring"
+                    )
+
+                if st.session_state[f"{module_key}_open"]:
+                    with st.container(border=True, key=f"{module_key}_details"):
+                        st.markdown("**Key Points:**")
+                        def update_completion(dict_key):
+                            st.session_state["completed_points"][dict_key] = st.session_state[dict_key]
+
+                        for p_idx, point_data in enumerate(module["key_points"]):
+                            point_key = f"{module_key}_point_{p_idx}"
+                            st.checkbox(
+                                point_data["point"],
+                                value=st.session_state["completed_points"].get(point_key, False),
+                                key=point_key,
+                                on_change=update_completion,
+                                args=(point_key,)
+                            )
+                            st.caption(point_data["content"])
+                            study_link_query = f"{point_data['point']} {subject_code} KTU notes"
+                            study_link = f"https://www.google.com/search?q={study_link_query.replace(' ', '+')}"
+                            st.markdown(f"[🔗 Study this topic in detail]({study_link})")
+                            st.markdown("")
+
+                        st.markdown("**Likely Questions:**")
+                        for q in module["likely_questions"]:
+                            with st.container():
+                                st.markdown(f"**Q: {q['question']}** _({q['marks']} marks)_")
+
+                                answer_parts = q["model_answer"].split("```")
+                                for i, part in enumerate(answer_parts):
+                                    if i % 2 == 1:
+                                        lines = part.strip().split("\n")
+                                        lang = lines[0] if lines[0].isalpha() else ""
+                                        code_content = "\n".join(lines[1:]) if lang else part.strip()
+                                        st.code(code_content, language=lang if lang else None)
+                                    else:
+                                        if part.strip():
+                                            st.markdown(part.strip())
+
+                                if q.get("needs_diagram"):
+                                    search_url = f"https://www.google.com/search?q={q['diagram_search_term'].replace(' ', '+')}&tbm=isch"
+                                    st.markdown(f"[🖼️ View diagram reference for this answer]({search_url})")
+                                st.markdown("---")
+
+            st.markdown("")
+
         st.markdown("---")
         pdf_bytes = generate_pdf(study_data, subject_code, days_left)
         st.download_button(
-         label="📥 Download Study Map as PDF",
-         data=pdf_bytes,
-         file_name=f"PrepPilot_{subject_code}_StudyMap.pdf",
-         mime="application/pdf"
-         )
+            label="📥 Download Quick Revision Sheet (PDF)",
+            data=pdf_bytes,
+            file_name=f"PrepPilot_{subject_code}_QuickRevision.pdf",
+            mime="application/pdf"
+        )
+
 
 st.sidebar.title("PrepPilot AI")
 st.sidebar.success("Version 2.0")

@@ -77,11 +77,12 @@ section[data-testid="stSidebar"]{
     background:#0e1626;
 }
 
-/* Study map result box - white background, black text */
+/* Overall study map box - glass/dark theme, matches rest of site */
 .st-key-study_map_box {
-    background-color: #ffffff !important;
-    color: #000000 !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid #00E5FF;
     border-radius: 16px;
+    box-shadow: 0 0 20px rgba(0, 229, 255, 0.15);
 }
 
 .st-key-study_map_box p,
@@ -91,23 +92,88 @@ section[data-testid="stSidebar"]{
 .st-key-study_map_box h2,
 .st-key-study_map_box h3,
 .st-key-study_map_box h4,
-.st-key-study_map_box strong {
+.st-key-study_map_box strong,
+.st-key-study_map_box label {
+    color: #ffffff !important;
+}
+
+/* Module row - glow on hover */
+div[class*="st-key-module_"][class*="_row"] {
+    border-radius: 12px;
+    padding: 8px;
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+}
+
+div[class*="st-key-module_"][class*="_row"]:hover {
+    border: 1px solid #00E5FF;
+    box-shadow: 0 0 15px rgba(0, 229, 255, 0.5);
+    background: rgba(0, 229, 255, 0.05);
+}
+
+/* Expanded detail card - white background */
+div[class*="st-key-module_"][class*="_details"] {
+    background-color: #ffffff !important;
+    border-radius: 12px !important;
+    padding: 15px !important;
+    animation: cardOpen 0.3s ease-out;
+}
+
+@keyframes cardOpen {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+div[class*="st-key-module_"][class*="_details"] p,
+div[class*="st-key-module_"][class*="_details"] li,
+div[class*="st-key-module_"][class*="_details"] span,
+div[class*="st-key-module_"][class*="_details"] h1,
+div[class*="st-key-module_"][class*="_details"] h2,
+div[class*="st-key-module_"][class*="_details"] h3,
+div[class*="st-key-module_"][class*="_details"] h4,
+div[class*="st-key-module_"][class*="_details"] strong,
+div[class*="st-key-module_"][class*="_details"] label {
     color: #000000 !important;
 }
 
-/* Multi-line code blocks inside the study map box */
-.st-key-study_map_box pre code,
-.st-key-study_map_box pre {
+/* Multi-line code blocks inside detail cards */
+div[class*="st-key-module_"][class*="_details"] pre code,
+div[class*="st-key-module_"][class*="_details"] pre {
     background-color: #1a1a1a !important;
-    color: #feffff !important;
+    color: #00E5FF !important;
 }
 
-/* Inline code snippets inside the study map box */
-.st-key-study_map_box p code,
-.st-key-study_map_box li code,
-.st-key-study_map_box span code {
+/* Inline code snippets inside detail cards */
+div[class*="st-key-module_"][class*="_details"] p code,
+div[class*="st-key-module_"][class*="_details"] li code,
+div[class*="st-key-module_"][class*="_details"] span code {
     background-color: #2b2b2b !important;
     color: #00E5FF !important;
     padding: 2px 6px !important;
     border-radius: 4px !important;
+}
+/* Force all syntax-highlighted tokens inside code blocks to be readable */
+div[class*="st-key-module_"][class*="_details"] pre span,
+.st-key-study_map_box pre span {
+    color: #f8f8f2 !important;
+}
+
+div[class*="st-key-module_"][class*="_details"] pre .token.keyword,
+.st-key-study_map_box pre .token.keyword {
+    color: #00E5FF !important;
+}
+
+div[class*="st-key-module_"][class*="_details"] pre .token.string,
+.st-key-study_map_box pre .token.string {
+    color: #a6e22e !important;
+}
+
+div[class*="st-key-module_"][class*="_details"] pre .token.function,
+.st-key-study_map_box pre .token.function {
+    color: #66d9ef !important;
+}
+
+div[class*="st-key-module_"][class*="_details"] pre .token.comment,
+.st-key-study_map_box pre .token.comment {
+    color: #888888 !important;
 }

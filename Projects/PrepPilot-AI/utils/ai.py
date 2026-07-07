@@ -68,6 +68,11 @@ def search_subject_info(subject_code):
 
     Summarize your findings clearly, organized by module. Do not
     present any 2019-scheme numbers as if they apply to 2024.
+
+     IMPORTANT: If you cannot find any credible information about a
+    KTU subject with this exact code (it may be invalid, mistyped, or
+    not a real KTU subject code), respond with EXACTLY this text and
+    nothing else: SUBJECT_NOT_FOUND
     """
 
     response = client.models.generate_content(
@@ -123,7 +128,9 @@ def generate_study_map(combined_text, subject_code, subject_info, days_left):
                                  requires hands-on practice' or 'Mostly
                                  theory/definitions, quick to memorize'",
           "study_order": <integer, 1 = study first>,
-          "key_points": ["point 1", "point 2", "..."],
+          "key_points": [
+            {{"point": "short key point title", "content": "detailed explanation/content to study for this point"}}
+          ],
           "likely_questions": [
             {{
               "question": "the likely exam question text",
