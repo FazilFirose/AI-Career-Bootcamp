@@ -220,7 +220,7 @@ if "study_data" in st.session_state:
             completion_pct = int((checked_count / total_points) * 100) if total_points > 0 else 0
 
             with st.container(key=f"{module_key}_row"):
-                col_card, col_ring = st.columns([5, 1])
+                col_card, col_ring = st.columns([6, 1])
 
                 with col_card:
                     icon = "▼" if st.session_state[f"{module_key}_open"] else "▶"

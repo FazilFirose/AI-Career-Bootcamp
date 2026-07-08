@@ -177,3 +177,8 @@ div[class*="st-key-module_"][class*="_details"] pre .token.comment,
 .st-key-study_map_box pre .token.comment {
     color: #888888 !important;
 }
+div[class*="st-key-module_"][class*="_toggle"] button {
+    padding-top: 35px !important;
+    padding-bottom: 35px !important;
+    font-size: 17px !important;
+}
