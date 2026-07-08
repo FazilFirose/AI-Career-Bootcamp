@@ -1,11 +1,17 @@
 import os
 from dotenv import load_dotenv
+import streamlit as st
 from google import genai
 from google.genai import types
 from utils.cache import get_cached_result, save_to_cache
 import json
 
 load_dotenv()  # reads the .env file
+
+
+# Try local .env first, fall back to Streamlit Cloud secrets
+api_key = os.getenv("GEMINI_API_KEY") or st.secrets.get("GEMINI_API_KEY")
+client = genai.Client(api_key=api_key)
 
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
