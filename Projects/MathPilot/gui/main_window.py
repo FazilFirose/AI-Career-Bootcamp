@@ -2,9 +2,10 @@ import threading
 
 import customtkinter as ctk
 
+from engine import process_question
 from gui.theme import APP_TITLE, COLORS, apply_theme
 from gui.widget import build_action_button, build_section
-from voice import listen
+from voice import listen, speak
 
 
 class MathPilotApp(ctk.CTk):
@@ -82,7 +83,7 @@ class MathPilotApp(ctk.CTk):
 
         self.status_label = ctk.CTkLabel(
             footer,
-            text="Waiting...",
+            text="Ready",
             text_color=COLORS["muted"],
             font=ctk.CTkFont(size=14),
             anchor="w",
@@ -109,13 +110,14 @@ class MathPilotApp(ctk.CTk):
         solve_button.grid(row=0, column=3, sticky="e", padx=(0, 12), pady=12)
 
     def _on_solve(self) -> None:
-        self.status_label.configure(text="Solving will be added in a future phase.")
+        question = self.question_textbox.get("1.0", "end").strip()
+        self._start_pipeline(question, speak_answer=False)
 
     def _on_upload_image(self) -> None:
         self.status_label.configure(text="Image upload will be added in a future phase.")
 
     def _on_voice(self) -> None:
-        self.status_label.configure(text="Listening...")
+        self._set_status("Listening...")
         self.update_idletasks()
 
         thread = threading.Thread(target=self._listen_for_voice, daemon=True)
@@ -128,15 +130,63 @@ class MathPilotApp(ctk.CTk):
             self.after(0, self._show_voice_error, str(exc))
             return
 
-        self.after(0, self._apply_voice_text, recognized_text)
+        self.after(0, self._apply_voice_text_and_solve, recognized_text)
 
-    def _apply_voice_text(self, recognized_text: str) -> None:
+    def _apply_voice_text_and_solve(self, recognized_text: str) -> None:
         self.question_textbox.delete("1.0", "end")
         self.question_textbox.insert("1.0", recognized_text)
-        self.status_label.configure(text="Ready")
+        self._start_pipeline(recognized_text, speak_answer=True)
 
     def _show_voice_error(self, message: str) -> None:
-        self.status_label.configure(text=f"Voice error: {message}")
+        self._set_status(f"Voice error: {message}")
+
+    def _start_pipeline(self, question: str, *, speak_answer: bool) -> None:
+        if not question:
+            self._set_status("Enter or speak a math question first.")
+            return
+
+        self._set_status("Understanding...")
+        self._set_answer_text("Working...")
+        self.update_idletasks()
+
+        thread = threading.Thread(
+            target=self._run_pipeline,
+            args=(question, speak_answer),
+            daemon=True,
+        )
+        thread.start()
+
+    def _run_pipeline(self, question: str, speak_answer: bool) -> None:
+        try:
+            answer = process_question(question, status_callback=self._queue_status)
+        except RuntimeError as exc:
+            self.after(0, self._show_pipeline_error, str(exc))
+            return
+
+        if speak_answer:
+            speak(answer)
+
+        self.after(0, self._show_pipeline_answer, answer)
+
+    def _show_pipeline_answer(self, answer: str) -> None:
+        self._set_answer_text(answer)
+        self._set_status("Done")
+
+    def _show_pipeline_error(self, message: str) -> None:
+        self._set_answer_text(message)
+        self._set_status(f"Error: {message}")
+
+    def _set_answer_text(self, text: str) -> None:
+        self.answer_textbox.configure(state="normal")
+        self.answer_textbox.delete("1.0", "end")
+        self.answer_textbox.insert("1.0", text)
+        self.answer_textbox.configure(state="disabled")
+
+    def _queue_status(self, status: str) -> None:
+        self.after(0, self._set_status, status)
+
+    def _set_status(self, status: str) -> None:
+        self.status_label.configure(text=status)
 
 
 def run_app() -> None:

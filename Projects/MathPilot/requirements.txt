@@ -1,2 +1,5 @@
 customtkinter
 SpeechRecognition
+groq
+python-dotenv
+sympy
