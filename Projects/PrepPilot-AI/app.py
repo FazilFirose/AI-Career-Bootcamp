@@ -17,18 +17,18 @@ with open(css_path) as f:
         unsafe_allow_html=True
     )
 st.set_page_config(
-    page_title="PrepPilot AI",
+    page_title="AceKTU",
     page_icon="📚",
     layout="wide"
 )
 
-st.title("📚 PrepPilot AI")
+st.title("📚 AceKTU")
 st.subheader("Your AI-Powered Study Assistant")
 
 st.markdown("---")
 
 st.write("""
-Welcome to **PrepPilot AI**!
+Welcome to **AceKTU**!
 
 Upload your study materials and let AI help you build a winning exam strategy.
 """)
@@ -309,10 +309,10 @@ if "study_data" in st.session_state:
         st.download_button(
             label="📥 Download Quick Revision Sheet (PDF)",
             data=pdf_bytes,
-            file_name=f"PrepPilot_{subject_code}_QuickRevision.pdf",
+            file_name=f"AceKTU_{subject_code}_QuickRevision.pdf",
             mime="application/pdf"
         )
 
 
-st.sidebar.title("PrepPilot AI")
+st.sidebar.title("AceKTU")
 st.sidebar.success("Version 2.0")

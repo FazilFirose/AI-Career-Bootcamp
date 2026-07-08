@@ -32,7 +32,7 @@ def generate_pdf(study_data, subject_code, days_left):
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
     pdf.set_font("Helvetica", "B", 16)
-    safe_multicell(pdf, f"PrepPilot AI - Quick Revision: {subject_code}", "title")
+    safe_multicell(pdf, f"AceKTU - Quick Revision: {subject_code}", "title")
     pdf.set_font("Helvetica", "", 11)
     safe_multicell(pdf, f"{days_left} day(s) left until exam", "days_left")
     pdf.ln(5)
