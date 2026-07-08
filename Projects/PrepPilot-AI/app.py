@@ -8,8 +8,10 @@ import io
 from utils.ai import summarize_text, search_subject_info, generate_study_map, detect_modules
 from pptx import Presentation
 from utils.pdf_export import generate_pdf
+import pathlib
 
-with open("assets/style.css") as f:
+css_path = pathlib.Path(__file__).parent / "assets" / "style.css"
+with open(css_path) as f:
     st.markdown(
         f"<style>{f.read()}</style>",
         unsafe_allow_html=True
