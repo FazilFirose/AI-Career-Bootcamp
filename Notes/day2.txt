@@ -14,7 +14,7 @@ SMART CALCULATOR V2
 
 --------------------------------------------------
 
-PREPPILOT AI - VERSION 1
+AceKTU - VERSION 1
 ------------------------
 ✔ Created project.
 ✔ Created Python virtual environment (.venv).
