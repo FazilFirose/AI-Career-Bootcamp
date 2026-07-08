@@ -3,3 +3,6 @@ SpeechRecognition
 groq
 python-dotenv
 sympy
+openwakeword
+PyAudio
+pyttsx3

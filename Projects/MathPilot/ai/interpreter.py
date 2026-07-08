@@ -1,30 +1,20 @@
 from ai.groq_client import ask_groq
-from ai.prompts import SYMPY_CONVERSION_SYSTEM_PROMPT
+from ai.prompts import SYMPY_SYSTEM_PROMPT
 
 
-def interpret_question(question: str) -> str:
-    cleaned_question = question.strip()
-    if not cleaned_question:
-        raise RuntimeError("Enter a math question first.")
+def interpret(question):
 
-    expression = ask_groq(SYMPY_CONVERSION_SYSTEM_PROMPT, cleaned_question)
-    expression = _clean_expression(expression)
+    if question.strip() == "":
+        raise Exception("Empty Question")
 
-    if not expression or expression.upper() == "INVALID":
-        raise RuntimeError("Groq could not convert this question into SymPy syntax.")
+    expression = ask_groq(
+        SYMPY_SYSTEM_PROMPT,
+        question
+    )
 
-    if "\n" in expression:
-        raise RuntimeError("Groq returned more than one expression. Please rephrase.")
+    expression = expression.strip()
+
+    if expression.upper() == "INVALID":
+        raise Exception("Unable to understand the question.")
 
     return expression
-
-
-def _clean_expression(expression: str) -> str:
-    cleaned = expression.strip()
-
-    if cleaned.startswith("```"):
-        cleaned = cleaned.strip("`").strip()
-        if cleaned.lower().startswith("python"):
-            cleaned = cleaned[6:].strip()
-
-    return cleaned

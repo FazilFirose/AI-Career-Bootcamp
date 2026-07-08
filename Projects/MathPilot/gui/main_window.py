@@ -1,194 +1,245 @@
-import threading
+from ai.interpreter import interpret
+from solver.sympy_solver import solve_expression
+from voice.speech import SpeechRecognizer
 
+import threading
+import sympy as sp
 import customtkinter as ctk
 
-from engine import process_question
-from gui.theme import APP_TITLE, COLORS, apply_theme
-from gui.widget import build_action_button, build_section
-from voice import listen, speak
+from gui.theme import apply_theme
+from gui.theme import COLORS
+from gui.theme import APP_TITLE
+
+from gui.widgets import create_textbox
+from gui.widgets import create_button
 
 
-class MathPilotApp(ctk.CTk):
+class MathPilot(ctk.CTk):
+
     def __init__(self):
+
         apply_theme()
+
         super().__init__()
 
         self.title(APP_TITLE)
-        self.geometry("980x720")
-        self.minsize(760, 560)
-        self.configure(fg_color=COLORS["background"])
+
+        self.geometry("1000x700")
+
+        self.configure(
+            fg_color=COLORS["background"]
+        )
 
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=1)
 
-        self._build_header()
-        self._build_workspace()
-        self._build_status_bar()
+        self.speech = SpeechRecognizer()
 
-    def _build_header(self) -> None:
-        header = ctk.CTkFrame(self, fg_color="transparent")
-        header.grid(row=0, column=0, sticky="ew", padx=28, pady=(24, 12))
-        header.grid_columnconfigure(0, weight=1)
+        self.build_ui()
+
+    def build_ui(self):
 
         title = ctk.CTkLabel(
-            header,
-            text=APP_TITLE,
-            text_color=COLORS["text"],
-            font=ctk.CTkFont(size=30, weight="bold"),
-            anchor="w",
-        )
-        title.grid(row=0, column=0, sticky="w")
-
-        subtitle = ctk.CTkLabel(
-            header,
-            text="Phase 2 interface",
-            text_color=COLORS["muted"],
-            font=ctk.CTkFont(size=14),
-            anchor="w",
-        )
-        subtitle.grid(row=1, column=0, sticky="w", pady=(4, 0))
-
-    def _build_workspace(self) -> None:
-        workspace = ctk.CTkFrame(self, fg_color="transparent")
-        workspace.grid(row=1, column=0, sticky="nsew", padx=28, pady=12)
-        workspace.grid_columnconfigure(0, weight=1)
-        workspace.grid_columnconfigure(1, weight=1)
-        workspace.grid_rowconfigure(0, weight=1)
-
-        question_frame, self.question_textbox = build_section(
-            workspace,
-            "Question",
-            "Type your math question here...",
-        )
-        question_frame.grid(row=0, column=0, sticky="nsew", padx=(0, 10))
-
-        answer_frame, self.answer_textbox = build_section(
-            workspace,
-            "Answer",
-            "Answer will appear here in a future phase.",
-            readonly=True,
-        )
-        answer_frame.grid(row=0, column=1, sticky="nsew", padx=(10, 0))
-
-    def _build_status_bar(self) -> None:
-        footer = ctk.CTkFrame(
             self,
-            fg_color=COLORS["surface"],
-            border_width=1,
-            border_color=COLORS["border"],
-            corner_radius=8,
+            text="MathPilot AI",
+            font=("Segoe UI", 32, "bold")
         )
-        footer.grid(row=2, column=0, sticky="ew", padx=28, pady=(12, 24))
-        footer.grid_columnconfigure(0, weight=1)
 
-        self.status_label = ctk.CTkLabel(
-            footer,
+        title.pack(pady=(20, 10))
+
+        self.question_box = create_textbox(self)
+
+        self.question_box.pack(
+            fill="both",
+            expand=False,
+            padx=30,
+            pady=10
+        )
+
+        self.question_box.configure(height=180)
+
+        self.answer_box = create_textbox(self)
+
+        self.answer_box.pack(
+            fill="both",
+            expand=True,
+            padx=30,
+            pady=10
+        )
+
+        self.answer_box.insert(
+            "1.0",
+            "Answer will appear here..."
+        )
+
+        self.answer_box.configure(state="disabled")
+
+        self.solve_button = create_button(
+            self,
+            "Solve",
+            self.solve
+        )
+
+        self.solve_button.pack(
+            pady=(15, 5)
+        )
+
+        self.voice_button = create_button(
+            self,
+            "🎤 Voice",
+            self.start_voice
+        )
+
+        self.voice_button.pack(
+            pady=(0, 15)
+        )
+
+        self.status = ctk.CTkLabel(
+            self,
             text="Ready",
-            text_color=COLORS["muted"],
-            font=ctk.CTkFont(size=14),
-            anchor="w",
+            font=("Segoe UI", 14)
         )
-        self.status_label.grid(row=0, column=0, sticky="ew", padx=18, pady=16)
 
-        upload_button = build_action_button(
-            footer,
-            "Upload Image",
-            self._on_upload_image,
-            secondary=True,
+        self.status.pack(
+            pady=10
         )
-        upload_button.grid(row=0, column=1, sticky="e", padx=(8, 10), pady=12)
 
-        voice_button = build_action_button(
-            footer,
-            "\U0001F3A4 Voice",
-            self._on_voice,
-            secondary=True,
+        self.question_box.bind(
+            "<Return>",
+            self.enter_pressed
         )
-        voice_button.grid(row=0, column=2, sticky="e", padx=(0, 10), pady=12)
 
-        solve_button = build_action_button(footer, "Solve", self._on_solve)
-        solve_button.grid(row=0, column=3, sticky="e", padx=(0, 12), pady=12)
+    def enter_pressed(self, event):
+        self.voice_button.configure(state="normal")
+        self.solve()
 
-    def _on_solve(self) -> None:
-        question = self.question_textbox.get("1.0", "end").strip()
-        self._start_pipeline(question, speak_answer=False)
+        return "break"
 
-    def _on_upload_image(self) -> None:
-        self.status_label.configure(text="Image upload will be added in a future phase.")
+    def start_voice(self):
 
-    def _on_voice(self) -> None:
-        self._set_status("Listening...")
-        self.update_idletasks()
+        self.voice_button.configure(state="disabled")
 
-        thread = threading.Thread(target=self._listen_for_voice, daemon=True)
-        thread.start()
-
-    def _listen_for_voice(self) -> None:
-        try:
-            recognized_text = listen()
-        except RuntimeError as exc:
-            self.after(0, self._show_voice_error, str(exc))
-            return
-
-        self.after(0, self._apply_voice_text_and_solve, recognized_text)
-
-    def _apply_voice_text_and_solve(self, recognized_text: str) -> None:
-        self.question_textbox.delete("1.0", "end")
-        self.question_textbox.insert("1.0", recognized_text)
-        self._start_pipeline(recognized_text, speak_answer=True)
-
-    def _show_voice_error(self, message: str) -> None:
-        self._set_status(f"Voice error: {message}")
-
-    def _start_pipeline(self, question: str, *, speak_answer: bool) -> None:
-        if not question:
-            self._set_status("Enter or speak a math question first.")
-            return
-
-        self._set_status("Understanding...")
-        self._set_answer_text("Working...")
-        self.update_idletasks()
+        self.status.configure(
+            text="Listening..."
+        )
 
         thread = threading.Thread(
-            target=self._run_pipeline,
-            args=(question, speak_answer),
-            daemon=True,
+            target=self.voice_worker,
+            daemon=True
         )
+
         thread.start()
 
-    def _run_pipeline(self, question: str, speak_answer: bool) -> None:
+    def voice_worker(self):
+
         try:
-            answer = process_question(question, status_callback=self._queue_status)
-        except RuntimeError as exc:
-            self.after(0, self._show_pipeline_error, str(exc))
+
+            text = self.speech.listen()
+
+            self.after(
+                0,
+                lambda: self.voice_finished(text)
+            )
+
+        except Exception as e:
+
+            self.after(
+                0,
+                lambda: self.voice_failed(str(e))
+            )
+
+    def voice_finished(self, text):
+
+        self.question_box.delete(
+            "1.0",
+            "end"
+        )
+
+        self.question_box.insert(
+            "1.0",
+            text
+        )
+
+        self.solve()
+
+    def voice_failed(self, message):
+
+        self.voice_button.configure(
+            state="normal"
+        )
+
+        self.status.configure(
+            text=message
+        )
+    def solve(self):
+
+        question = self.question_box.get("1.0", "end").strip()
+
+        if not question:
+
+            self.voice_button.configure(state="normal")
+
             return
 
-        if speak_answer:
-            speak(answer)
+        self.status.configure(text="Thinking...")
 
-        self.after(0, self._show_pipeline_answer, answer)
+        self.update()
 
-    def _show_pipeline_answer(self, answer: str) -> None:
-        self._set_answer_text(answer)
-        self._set_status("Done")
+        try:
 
-    def _show_pipeline_error(self, message: str) -> None:
-        self._set_answer_text(message)
-        self._set_status(f"Error: {message}")
+            expression = interpret(question)
 
-    def _set_answer_text(self, text: str) -> None:
-        self.answer_textbox.configure(state="normal")
-        self.answer_textbox.delete("1.0", "end")
-        self.answer_textbox.insert("1.0", text)
-        self.answer_textbox.configure(state="disabled")
+            answer = solve_expression(expression)
 
-    def _queue_status(self, status: str) -> None:
-        self.after(0, self._set_status, status)
+            try:
 
-    def _set_status(self, status: str) -> None:
-        self.status_label.configure(text=status)
+                numeric = sp.N(answer)
+
+                if numeric != answer:
+
+                    output = f"{answer}\n\n≈ {numeric}"
+
+                else:
+
+                    output = str(answer)
+
+            except Exception:
+
+                output = str(answer)
+
+            self.answer_box.configure(state="normal")
+
+            self.answer_box.delete("1.0", "end")
+
+            self.answer_box.insert("1.0", output)
+
+            self.answer_box.configure(state="disabled")
+
+            self.question_box.delete("1.0", "end")
+
+            self.question_box.focus_set()
+
+            self.status.configure(text="Ready")
+
+        except Exception as e:
+
+            self.answer_box.configure(state="normal")
+
+            self.answer_box.delete("1.0", "end")
+
+            self.answer_box.insert("1.0", f"Error:\n{e}")
+
+            self.answer_box.configure(state="disabled")
+
+            self.status.configure(text="Error")
+
+        finally:
+
+            self.voice_button.configure(state="normal")
 
 
-def run_app() -> None:
-    app = MathPilotApp()
+def run_app():
+
+    app = MathPilot()
+
     app.mainloop()
