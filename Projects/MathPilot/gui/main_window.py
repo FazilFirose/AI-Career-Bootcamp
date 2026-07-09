@@ -1,15 +1,14 @@
 from ai.interpreter import interpret
 from solver.sympy_solver import solve_expression
 from voice.speech import SpeechRecognizer
-
+from voice.tts import Speaker
+from voice.voice_controller import VoiceController
 import threading
 import sympy as sp
 import customtkinter as ctk
-
 from gui.theme import apply_theme
 from gui.theme import COLORS
 from gui.theme import APP_TITLE
-
 from gui.widgets import create_textbox
 from gui.widgets import create_button
 
@@ -34,6 +33,13 @@ class MathPilot(ctk.CTk):
         self.grid_rowconfigure(1, weight=1)
 
         self.speech = SpeechRecognizer()
+        self.speaker = Speaker()
+
+        self.voice_mode = False
+        self.voice_controller = VoiceController(
+         self.on_voice_question,
+         self.update_status
+        )
 
         self.build_ui()
 
@@ -84,15 +90,7 @@ class MathPilot(ctk.CTk):
             pady=(15, 5)
         )
 
-        self.voice_button = create_button(
-            self,
-            "🎤 Voice",
-            self.start_voice
-        )
-
-        self.voice_button.pack(
-            pady=(0, 15)
-        )
+        
 
         self.status = ctk.CTkLabel(
             self,
@@ -103,6 +101,11 @@ class MathPilot(ctk.CTk):
         self.status.pack(
             pady=10
         )
+        self.status.configure(
+          text='Waiting for "Math"...'
+         )
+
+        self.voice_controller.start()
 
         self.question_box.bind(
             "<Return>",
@@ -110,132 +113,118 @@ class MathPilot(ctk.CTk):
         )
 
     def enter_pressed(self, event):
-        self.voice_button.configure(state="normal")
+        
         self.solve()
 
         return "break"
-
-    def start_voice(self):
-
-        self.voice_button.configure(state="disabled")
-
-        self.status.configure(
-            text="Listening..."
-        )
-
-        thread = threading.Thread(
-            target=self.voice_worker,
-            daemon=True
-        )
-
-        thread.start()
-
-    def voice_worker(self):
-
-        try:
-
-            text = self.speech.listen()
-
-            self.after(
-                0,
-                lambda: self.voice_finished(text)
-            )
-
-        except Exception as e:
-
-            self.after(
-                0,
-                lambda: self.voice_failed(str(e))
-            )
-
-    def voice_finished(self, text):
-
-        self.question_box.delete(
-            "1.0",
-            "end"
-        )
-
-        self.question_box.insert(
-            "1.0",
-            text
-        )
-
-        self.solve()
-
-    def voice_failed(self, message):
-
-        self.voice_button.configure(
-            state="normal"
-        )
-
-        self.status.configure(
-            text=message
-        )
     def solve(self):
 
-        question = self.question_box.get("1.0", "end").strip()
+     question = self.question_box.get("1.0", "end").strip()
 
-        if not question:
+     if not question:
 
-            self.voice_button.configure(state="normal")
+        
+        return
 
-            return
+     self.status.configure(text="Thinking...")
+     self.update()
 
-        self.status.configure(text="Thinking...")
+     try:
 
-        self.update()
+        expression = interpret(question)
+
+        answer = solve_expression(expression)
 
         try:
 
-            expression = interpret(question)
+            numeric = sp.N(answer)
 
-            answer = solve_expression(expression)
+            if numeric != answer:
+                output = f"{answer}\n\n≈ {numeric}"
+            else:
+                output = str(answer)
+
+        except Exception:
+
+            output = str(answer)
+
+        self.answer_box.configure(state="normal")
+        self.answer_box.delete("1.0", "end")
+        self.answer_box.insert("1.0", output)
+        self.answer_box.configure(state="disabled")
+
+        if self.voice_mode:
 
             try:
 
-                numeric = sp.N(answer)
+                if "≈" in output:
 
-                if numeric != answer:
+                    try:
 
-                    output = f"{answer}\n\n≈ {numeric}"
+                     spoken = str(round(float(sp.N(answer)), 2))
+
+                    except Exception:
+
+                     spoken = str(round(float(sp.N(answer)), 2))
 
                 else:
 
-                    output = str(answer)
+                    spoken = str(round(float(sp.N(answer)), 2))
+
+                threading.Thread(
+                  target=self.speaker.speak,
+                  args=(spoken,),
+                  daemon=True
+                ).start()
 
             except Exception:
 
-                output = str(answer)
+                pass
 
-            self.answer_box.configure(state="normal")
+            self.voice_mode = False
 
-            self.answer_box.delete("1.0", "end")
+        self.question_box.delete("1.0", "end")
 
-            self.answer_box.insert("1.0", output)
+        self.question_box.focus_set()
 
-            self.answer_box.configure(state="disabled")
+        self.status.configure(text='Waiting for "Math"...')
 
-            self.question_box.delete("1.0", "end")
+     except Exception as e:
 
-            self.question_box.focus_set()
+        self.answer_box.configure(state="normal")
+        self.answer_box.delete("1.0", "end")
+        self.answer_box.insert("1.0", f"Error:\n{e}")
+        self.answer_box.configure(state="disabled")
 
-            self.status.configure(text="Ready")
+        self.status.configure(text="Error")
+        self.status.configure(
+          text='Waiting for "Math"...'
+         )
 
-        except Exception as e:
+    def on_voice_question(self, question):
 
-            self.answer_box.configure(state="normal")
+     self.after(
+        0,
+        lambda: self.process_voice_question(question))
+      
 
-            self.answer_box.delete("1.0", "end")
 
-            self.answer_box.insert("1.0", f"Error:\n{e}")
+    def process_voice_question(self, question):
 
-            self.answer_box.configure(state="disabled")
+     self.voice_mode = True
 
-            self.status.configure(text="Error")
+     self.question_box.delete("1.0", "end")
 
-        finally:
+     self.question_box.insert("1.0", question)
 
-            self.voice_button.configure(state="normal")
+     self.solve()
+    def update_status(self, text):
+
+     self.after(
+        0,
+        lambda: self.status.configure(text=text)
+      )
+
 
 
 def run_app():

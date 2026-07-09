@@ -8,37 +8,56 @@ class SpeechRecognizer:
         self.recognizer = sr.Recognizer()
 
         self.recognizer.dynamic_energy_threshold = True
-        self.recognizer.energy_threshold = 300
-        self.recognizer.pause_threshold = 1.0
-        self.recognizer.phrase_threshold = 0.3
-        self.recognizer.non_speaking_duration = 0.5
+        self.recognizer.pause_threshold = 0.8
 
-    def listen(self):
+        self.microphone = sr.Microphone()
 
-        try:
+        with self.microphone as source:
 
-            with sr.Microphone() as source:
+            self.recognizer.adjust_for_ambient_noise(
+                source,
+                duration=1
+            )
 
-                self.recognizer.adjust_for_ambient_noise(
-                    source,
-                    duration=0.5
-                )
+    def listen_once(self):
+
+        with self.microphone as source:
+
+            audio = self.recognizer.listen(
+                source,
+                timeout=8,
+                phrase_time_limit=10
+            )
+
+        text = self.recognizer.recognize_google(audio)
+        self.recognizer = sr.Recognizer()
+        self.recognizer.dynamic_energy_threshold = True
+        self.recognizer.pause_threshold = 0.8
+
+        return text.lower().strip()
+
+    def listen_for_phrase(self):
+
+        with self.microphone as source:
+
+            try:
 
                 audio = self.recognizer.listen(
                     source,
-                    timeout=5,
-                    phrase_time_limit=10
+                    timeout=1,
+                    phrase_time_limit=2
                 )
+
+            except sr.WaitTimeoutError:
+
+                return ""
+
+        try:
 
             text = self.recognizer.recognize_google(audio)
 
-            return text
+            return text.lower().strip()
 
-        except sr.WaitTimeoutError:
-            raise Exception("Listening timed out.")
+        except Exception:
 
-        except sr.UnknownValueError:
-            raise Exception("Couldn't understand speech.")
-
-        except sr.RequestError:
-            raise Exception("Speech recognition service unavailable.")
+            return ""
