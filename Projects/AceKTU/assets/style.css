@@ -112,16 +112,16 @@ div[class*="st-key-module_"][class*="_row"]:hover {
 }
 
 /* Expanded detail card - white background */
-div[class*="st-key-module_"][class*="_details"] {
+ddiv[class*="st-key-module_"][class*="_details"] {
     background-color: #ffffff !important;
     border-radius: 12px !important;
     padding: 15px !important;
-    animation: cardOpen 0.3s ease-out;
+    animation: cardOpen 0.45s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 @keyframes cardOpen {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; transform: translateY(-15px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 div[class*="st-key-module_"][class*="_details"] p,

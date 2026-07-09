@@ -228,7 +228,6 @@ if "study_data" in st.session_state:
                     icon = "▼" if st.session_state[f"{module_key}_open"] else "▶"
                     if st.button(f"{icon} {module['name']}", key=f"{module_key}_toggle", use_container_width=True):
                         st.session_state[f"{module_key}_open"] = not st.session_state[f"{module_key}_open"]
-                        st.rerun()
 
                 with col_ring:
                     st.plotly_chart(
