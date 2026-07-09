@@ -9,6 +9,12 @@ from utils.ai import summarize_text, search_subject_info, generate_study_map, de
 from pptx import Presentation
 from utils.pdf_export import generate_pdf
 import pathlib
+st.markdown(
+    """
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600&display=swap" rel="stylesheet">
+    """,
+    unsafe_allow_html=True
+)
 
 css_path = pathlib.Path(__file__).parent / "assets" / "style.css"
 with open(css_path) as f:
@@ -27,28 +33,67 @@ st.subheader("Your AI-Powered Study Assistant")
 
 st.markdown("---")
 
-st.write("""
-Welcome to **AceKTU**!
-
-Upload your study materials and let AI help you build a winning exam strategy.
-""")
-
-st.markdown("### Step 1: Upload your study materials")
-uploaded_files = st.file_uploader(
-    "📄 Upload one or more PDFs or PowerPoint files (any modules you have notes for)",
-    type=["pdf", "pptx"],
-    accept_multiple_files=True
+st.markdown(
+    """
+    <div style="text-align:center;">
+        <p style="font-size:20px;">Welcome to <strong>AceKTU</strong>!</p>
+        <p style="font-size:16px; color:#8fa3c0;">Let's make your exam study map</p>
+    </div>
+    """,
+    unsafe_allow_html=True
 )
+st.markdown(
+    """
+    <div style="display:flex; justify-content:center; gap:40px; margin: 30px 0; text-align:center;">
+        <div><div style="font-size:28px;">📤</div><div style="color:#8fa3c0; font-size:13px;">1. Upload Notes</div></div>
+        <div><div style="font-size:28px;">🔍</div><div style="color:#8fa3c0; font-size:13px;">2. AI Researches</div></div>
+        <div><div style="font-size:28px;">🗺️</div><div style="color:#8fa3c0; font-size:13px;">3. Get Your Plan</div></div>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+col_left, col_center, col_right = st.columns([1, 3, 1])
+with col_center:
+    st.markdown(
+        """
+        <div style="text-align:center; margin-bottom: 10px;">
+            <div style="font-size: 48px;">📤</div>
+            <div style="font-size: 22px; font-weight: 700; color: #94a3b8;">Upload Your Study Materials</div>
+            <div style="font-size: 14px; color: #8fa3c0;">PDF or PowerPoint — any modules you have notes for</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    uploaded_files = st.file_uploader(
+        "Upload files",
+        type=["pdf", "pptx"],
+        accept_multiple_files=True,
+        label_visibility="collapsed"
+    )
 
-st.markdown("### Step 2: Subject details")
-subject_code = st.text_input(
-    "📘 KTU Subject Code",
-    placeholder="Example: CST301"
-).strip().upper()
 
-exam_date = st.date_input("📅 Exam Date")
+col_subject, col_date = st.columns(2)
 
-generate_clicked = st.button("🎯 Generate Study Map")
+with col_subject:
+    subject_code = st.text_input(
+        "📘 KTU Subject Code",
+        placeholder="Example: CST301"
+    ).strip().upper()
+
+with col_date:
+    exam_date = st.date_input("📅 Exam Date")
+
+generate_clicked = st.button("🎯 Generate Study Map", key="generate_main_btn")
+if not generate_clicked and "study_data" not in st.session_state:
+    st.markdown(
+        """
+        <div style="text-align:center; padding: 40px 0; color:#5a6d8a;">
+            <div style="font-size:40px;">🗺️</div>
+            <div style="font-size:16px;">Your personalized study map will appear here</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 
 @st.cache_data
@@ -104,14 +149,14 @@ if generate_clicked:
             st.stop()
 
         try:
-            with st.spinner(f"Step 1/3: Researching {subject_code} syllabus..."):
+            with st.spinner(f"🔍 Step 1/3: Researching {subject_code} syllabus..."):
                 subject_info = search_subject_info(subject_code)
 
             if "SUBJECT_NOT_FOUND" in subject_info:
                 st.error(f"⚠️ '{subject_code}' doesn't appear to be a valid KTU subject code. Please check and try again.")
                 st.stop()
 
-            with st.spinner("Step 2/3: Matching your files to modules..."):
+            with st.spinner("📋 Step 2/3: Matching your files to modules..."):
                 module_mapping = detect_modules(file_snippets, subject_info)
 
             st.markdown("### 📊 Your Files, Mapped to Modules")
@@ -128,7 +173,7 @@ if generate_clicked:
             st.stop()
 
         try:
-            with st.spinner("Step 3/3: Building your personalized study map..."):
+            with st.spinner("🗺️ Step 3/3: Building your personalized study map..."):
                 study_data = generate_study_map(
                     combined_text=combined_text,
                     subject_code=subject_code,
@@ -237,7 +282,7 @@ if "study_data" in st.session_state:
                                 "labels": ["Done", "Remaining"],
                                 "type": "pie",
                                 "hole": 0.65,
-                                "marker": {"colors": ["#00E5FF", "#3a3a3a"]},
+                                "marker": {"colors": ["#94a3b8", "#3a3a3a"]},
                                 "textinfo": "none",
                                 "showlegend": False,
                                 "sort": False,
@@ -315,3 +360,14 @@ if "study_data" in st.session_state:
 
 st.sidebar.title("AceKTU")
 st.sidebar.success("Version 2.0")
+st.markdown("---")
+st.markdown(
+    """
+    <div style="text-align:center; padding: 20px 0; color:#5a6d8a; font-size:13px;">
+        Built by <strong style="color:#94a3b8;">Fazil Firose Ibrahim</strong><br>
+        <a href="https://github.com/FazilFirose" style="color:#8fa3c0;" target="_blank">GitHub</a> ·
+        <a href="https://www.linkedin.com/in/fazil-firose-ibrahim-97a378255" style="color:#8fa3c0;" target="_blank">LinkedIn</a>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
