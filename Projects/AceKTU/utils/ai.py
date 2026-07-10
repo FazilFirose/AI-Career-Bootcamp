@@ -40,10 +40,12 @@ def search_subject_info(subject_code):
     """
     Searches for KTU subject syllabus + past paper patterns for a given
     subject code. Uses cache to avoid repeating searches for the same subject.
+    Retries once if the first attempt returns SUBJECT_NOT_FOUND, since live
+    web search results can vary between attempts.
     """
     cached = get_cached_result(subject_code)
     if cached:
-        return cached  # already searched before, reuse it
+        return cached
 
     prompt = f"""
     CONFIRMED FACTS about KTU (APJ Abdul Kalam Technological University)
@@ -61,7 +63,10 @@ def search_subject_info(subject_code):
       ktu.edu.in/academics/btech/question-papers/semester-X
 
     Search for information about the KTU subject with code {subject_code}.
-    Prioritize ktu.edu.in as the source wherever possible. Find:
+    Prioritize ktu.edu.in as the source wherever possible. Try multiple
+    search approaches if needed (exact code, code with spaces, subject
+    code combined with common branch/semester terms) before concluding
+    nothing exists. Find:
     1. The official 2024-scheme syllabus/module breakdown for this
        subject (must be exactly 4 modules)
     2. Any available 2024-scheme previous year or model question papers
@@ -75,22 +80,29 @@ def search_subject_info(subject_code):
     Summarize your findings clearly, organized by module. Do not
     present any 2019-scheme numbers as if they apply to 2024.
 
-     IMPORTANT: If you cannot find any credible information about a
-    KTU subject with this exact code (it may be invalid, mistyped, or
-    not a real KTU subject code), respond with EXACTLY this text and
-    nothing else: SUBJECT_NOT_FOUND
+    IMPORTANT: Only respond with exactly "SUBJECT_NOT_FOUND" if you are
+    highly confident this code does not correspond to any real KTU
+    subject after trying multiple search angles. If you find even
+    partial or indirect information (e.g., the code appears in a
+    timetable, a syllabus list, or a forum discussion), use that
+    information rather than declaring it not found.
     """
 
-    response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            tools=[types.Tool(google_search=types.GoogleSearch())]
+    for attempt in range(2):
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                tools=[types.Tool(google_search=types.GoogleSearch())]
+            )
         )
-    )
+        result = response.text
 
-    result = response.text
-    save_to_cache(subject_code, result)
+        if "SUBJECT_NOT_FOUND" not in result:
+            save_to_cache(subject_code, result)
+            return result
+
+    # Only reaches here if both attempts returned SUBJECT_NOT_FOUND
     return result
 def generate_study_map(combined_text, subject_code, subject_info, days_left):
     """

@@ -42,22 +42,13 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-st.markdown(
-    """
-    <div style="display:flex; justify-content:center; gap:40px; margin: 30px 0; text-align:center;">
-        <div><div style="font-size:28px;">📤</div><div style="color:#8fa3c0; font-size:13px;">1. Upload Notes</div></div>
-        <div><div style="font-size:28px;">🔍</div><div style="color:#8fa3c0; font-size:13px;">2. AI Researches</div></div>
-        <div><div style="font-size:28px;">🗺️</div><div style="color:#8fa3c0; font-size:13px;">3. Get Your Plan</div></div>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+
+
 col_left, col_center, col_right = st.columns([1, 3, 1])
 with col_center:
     st.markdown(
         """
         <div style="text-align:center; margin-bottom: 10px;">
-            <div style="font-size: 48px;">📤</div>
             <div style="font-size: 22px; font-weight: 700; color: #94a3b8;">Upload Your Study Materials</div>
             <div style="font-size: 14px; color: #8fa3c0;">PDF or PowerPoint — any modules you have notes for</div>
         </div>
