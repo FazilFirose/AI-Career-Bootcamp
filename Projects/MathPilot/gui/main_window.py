@@ -40,77 +40,234 @@ class MathPilot(ctk.CTk):
          self.on_voice_question,
          self.update_status
         )
+        self.voice_controller.start()
+
 
         self.build_ui()
 
     def build_ui(self):
 
-        title = ctk.CTkLabel(
-            self,
-            text="MathPilot AI",
-            font=("Segoe UI", 32, "bold")
-        )
+     # ================= HEADER =================
 
-        title.pack(pady=(20, 10))
+     header = ctk.CTkFrame(
+        self,
+        fg_color="transparent"
+     )
+ 
+     header.pack(
+        fill="x",
+        padx=30,
+        pady=(25, 10)
+     )
 
-        self.question_box = create_textbox(self)
+     title = ctk.CTkLabel(
+        header,
+        text="🧠 MathPilot AI",
+        font=("Segoe UI Variable", 42, "bold"),
+        text_color=COLORS["text"]
+     )
 
-        self.question_box.pack(
-            fill="both",
-            expand=False,
-            padx=30,
-            pady=10
-        )
+     title.pack(anchor="w")
 
-        self.question_box.configure(height=180)
+     subtitle = ctk.CTkLabel(
+        header,
+        text="Your AI Mathematics Assistant",
+        font=("Segoe UI Variable", 16),
+        text_color=COLORS["secondary_text"]
+     )
 
-        self.answer_box = create_textbox(self)
+     subtitle.pack(anchor="w", pady=(5, 0))
 
-        self.answer_box.pack(
-            fill="both",
-            expand=True,
-            padx=30,
-            pady=10
-        )
+     #================== TOOLBAR=================
 
-        self.answer_box.insert(
-            "1.0",
-            "Answer will appear here..."
-        )
+     toolbar = ctk.CTkFrame(
+      self,
+      fg_color="transparent"
+     )
 
-        self.answer_box.configure(state="disabled")
+     toolbar.pack(
+      fill="x",
+      padx=30,
+      pady=(5,15)
+     )
 
-        self.solve_button = create_button(
-            self,
-            "Solve",
-            self.solve
-        )
+     version = ctk.CTkLabel(
+      toolbar,
+      text="Version 1.0",
+      font=("Segoe UI Variable",13),
+      text_color=COLORS["secondary_text"]
+     )
 
-        self.solve_button.pack(
-            pady=(15, 5)
-        )
+     version.pack(side="left")
 
-        
+     mode = ctk.CTkLabel(
+      toolbar,
+      text="AI • Voice • SymPy",
+      font=("Segoe UI Variable",13),
+      text_color=COLORS["secondary_text"]
+     )
 
-        self.status = ctk.CTkLabel(
-            self,
-            text="Ready",
-            font=("Segoe UI", 14)
-        )
+     mode.pack(side="right")
 
-        self.status.pack(
-            pady=10
-        )
-        self.status.configure(
-          text='Waiting for "Math"...'
-         )
+     # ================= STATUS =================
 
-        self.voice_controller.start()
+     status_frame = ctk.CTkFrame(
+        self,
+        fg_color="transparent"
+     )
 
-        self.question_box.bind(
-            "<Return>",
-            self.enter_pressed
-        )
+     status_frame.pack(
+        fill="x",
+        padx=30,
+        pady=(10, 20)
+     )
+
+     self.mic_indicator = ctk.CTkLabel(
+        status_frame,
+        text="🎤",
+        font=("Segoe UI Emoji", 36),
+        text_color=COLORS["secondary_text"]
+     )
+
+     self.mic_indicator.pack(
+        side="left",
+        padx=(0, 10)
+     )
+
+     self.status = ctk.CTkLabel(
+        status_frame,
+        text='🟢 Waiting for "Math"...',
+        font=("Segoe UI Variable", 15, "bold"),
+        text_color=COLORS["success"]
+     )
+
+     self.status.pack(side="left")
+
+     # ================= MAIN CONTENT =================
+
+     main_frame = ctk.CTkFrame(
+        self,
+        fg_color="transparent"
+     )
+
+     main_frame.pack(
+        fill="both",
+        expand=True,
+        padx=30,
+        pady=(0, 20)
+     )
+
+     main_frame.grid_columnconfigure(0, weight=1)
+     main_frame.grid_columnconfigure(1, weight=1)
+     main_frame.grid_rowconfigure(0, weight=1)
+
+     # ================= QUESTION =================
+
+     question_card = ctk.CTkFrame(
+       main_frame,
+       fg_color=COLORS["card"],
+       corner_radius=28,
+       border_width=1,
+       border_color=COLORS["border"]
+     )
+
+     question_card.grid(
+        row=0,
+        column=0,
+        sticky="nsew",
+        padx=(0, 10)
+     )
+
+     question_label = ctk.CTkLabel(
+        question_card,
+        text="Ask your question",
+        font=("Segoe UI Variable", 16, "bold"),
+        text_color=COLORS["text"]
+     )
+
+     question_label.pack(
+        anchor="w",
+        padx=20,
+        pady=(18, 8)
+     )
+
+     self.question_box = create_textbox(question_card)
+
+     self.question_box.pack(
+        fill="both",
+        expand=True,
+        padx=20,
+        pady=(0, 20)
+     )
+
+     self.question_box.configure(
+        height=420
+     )
+
+     self.question_box.bind(
+        "<Return>",
+        self.enter_pressed
+     )
+
+     # ================= ANSWER =================
+
+     answer_card = ctk.CTkFrame(
+      main_frame,
+      fg_color=COLORS["card"],
+      corner_radius=28,
+      border_width=1,
+      border_color=COLORS["border"]
+    )
+
+     answer_card.grid(
+        row=0,
+        column=1,
+        sticky="nsew",
+        padx=(10, 0)
+     )
+
+     answer_label = ctk.CTkLabel(
+        answer_card,
+        text="Answer",
+        font=("Segoe UI Variable", 18, "bold"),
+        text_color=COLORS["text"]
+     )
+
+     answer_label.pack(
+        anchor="w",
+        padx=20,
+        pady=(18, 8)
+     )
+
+     self.answer_box = create_textbox(answer_card)
+
+     self.answer_box.pack(
+        fill="both",
+        expand=True,
+        padx=20,
+        pady=(0, 20)
+     )
+
+     self.answer_box.insert(
+        "1.0",
+        "Answer..."
+     )
+
+     self.answer_box.configure(
+        state="disabled"
+     )
+
+     # ================= BUTTON =================
+
+     self.solve_button = create_button(
+      self,
+        "✨ Solve",
+        self.solve
+     )
+
+     self.solve_button.pack(
+        pady=(0, 25)
+     )
 
     def enter_pressed(self, event):
         
@@ -126,7 +283,8 @@ class MathPilot(ctk.CTk):
         
         return
 
-     self.status.configure(text="Thinking...")
+     self.update_status("🟣 Thinking")
+     self.animate_thinking()
      self.update()
 
      try:
@@ -198,7 +356,7 @@ class MathPilot(ctk.CTk):
 
         self.status.configure(text="Error")
         self.status.configure(
-          text='Waiting for "Math"...'
+          text='🟢 Waiting for "Math"...'
          )
 
     def on_voice_question(self, question):
@@ -220,10 +378,105 @@ class MathPilot(ctk.CTk):
      self.solve()
     def update_status(self, text):
 
-     self.after(
-        0,
-        lambda: self.status.configure(text=text)
-      )
+      def update():
+
+        self.status.configure(text=text)
+
+        if "Waiting" in text:
+
+            self.status.configure(
+                text_color=COLORS["success"]
+            )
+
+            self.mic_indicator.configure(
+                text_color=COLORS["secondary_text"]
+            )
+
+        elif "Listening" in text:
+
+            self.status.configure(
+                text_color="#38BDF8"
+            )
+            self.pulse_microphone()
+        elif "Thinking" in text:
+
+            self.status.configure(
+                text_color="#A855F7"
+            )
+            self.pulse_microphone()
+
+        elif "Speaking" in text:
+
+            self.status.configure(
+                text_color="#F59E0B"
+            )
+            self.pulse_microphone()
+
+        else:
+
+            self.status.configure(
+                text_color=COLORS["secondary_text"]
+            )
+
+            self.mic_indicator.configure(
+                text_color=COLORS["secondary_text"]
+            )
+
+      self.after(0, update)
+    def animate_thinking(self):
+
+     dots = ["", ".", "..", "..."]
+
+     index = 0
+
+     def animate():
+
+        nonlocal index
+
+        if "Thinking" not in self.status.cget("text"):
+
+            return
+
+        self.status.configure(
+            text=f"🟣 Thinking{dots[index]}"
+        )
+
+        index = (index + 1) % len(dots)
+
+        self.after(350, animate)
+
+     animate()
+    def pulse_microphone(self):
+
+     colors = [
+        COLORS["secondary_text"],
+        "#60A5FA",
+        "#A855F7",
+        "#60A5FA"
+       ]
+
+     index = 0
+
+     def animate():
+
+        nonlocal index
+
+        status = self.status.cget("text")
+
+        if ("Listening" not in status and
+            "Thinking" not in status and
+            "Speaking" not in status):
+            return
+
+        self.mic_indicator.configure(
+            text_color=colors[index]
+        )
+
+        index = (index + 1) % len(colors)
+
+        self.after(250, animate)
+
+     animate()
 
 
 
